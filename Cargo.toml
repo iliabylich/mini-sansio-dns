@@ -1,0 +1,19 @@
+[package]
+name = "mini-sansio-dns"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/iliabylich/mini-sansio-dns"
+authors = ["Ilya Bylich <ibylich@gmail.com>"]
+description = "Sans-IO implementation of DNS protocol"
+
+[dependencies]
+rustix = { version = "1", features = ["net"] }
+
+[dev-dependencies]
+env_logger = { version = "0.11", default-features = false, features = [
+    "auto-color",
+] }
+log = "0.4"
+anyhow = "1.0"
+rustix = { version = "1", features = ["fs", "event"] }
