@@ -8,7 +8,7 @@ authors = ["Ilya Bylich <ibylich@gmail.com>"]
 description = "Sans-IO implementation of DNS protocol"
 
 [dependencies]
-rustix = { version = "1", features = ["net"] }
+rustix = { version = "1", default-features = false, features = ["net"] }
 
 [dev-dependencies]
 env_logger = { version = "0.11", default-features = false, features = [
