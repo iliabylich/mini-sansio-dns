@@ -29,10 +29,10 @@ pub enum DnsError {
     NoReplyFoundInResponse,
 
     /// Internal error
-    InternalError(String),
+    InternalError,
 
     /// Unknown DNS record type
-    UnknownDnsRecordType(String),
+    UnknownDnsRecordType,
 }
 
 impl core::fmt::Display for DnsError {

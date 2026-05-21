@@ -1,5 +1,5 @@
 use crate::{CLASS_IN, DnsError, DnsRecordType, TYPE_A, TYPE_AAAA, name::DnsName};
-use std::net::SocketAddr;
+use core::net::SocketAddr;
 
 pub struct Response;
 
@@ -34,7 +34,7 @@ impl Response {
             let rdlength = read_u16(buf, &mut pos)?;
 
             if rclass != CLASS_IN || rtype != desired_record_type.into_raw() {
-                let _ = read_slice(buf, &mut pos, rdlength as usize)?;
+                let _ignore = read_slice(buf, &mut pos, rdlength as usize)?;
                 continue;
             }
 
@@ -55,9 +55,7 @@ impl Response {
 
 fn read_bytes<const N: usize>(buf: &[u8], pos: &mut usize) -> Result<[u8; N], DnsError> {
     let start = *pos;
-    let end = start
-        .checked_add(N)
-        .ok_or_else(|| DnsError::InternalError("Response overflow".to_string()))?;
+    let end = start.checked_add(N).ok_or(DnsError::InternalError)?;
 
     let bytes = buf.get(start..end).ok_or(DnsError::TruncatedPacket)?;
     let mut out = [0u8; N];

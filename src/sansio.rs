@@ -1,8 +1,8 @@
 use crate::{
     DnsError, DnsRecordType, DnsWants, MAX_DNS_PACKET_LEN, request::Request, response::Response,
 };
+use core::net::SocketAddr;
 use rustix::net::{AddressFamily, SocketType};
-use std::net::SocketAddr;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum State {
@@ -91,10 +91,7 @@ impl<'a> Dns<'a> {
     /// Returns an error if `socket()` wasn't the last operation returned from `wants()`
     pub fn satisfy_socket(&mut self) -> Result<(), DnsError> {
         if self.state != State::Socket {
-            return Err(DnsError::InternalError(format!(
-                "malformed state, expected Socket, got {:?}",
-                self.state,
-            )));
+            return Err(DnsError::InternalError);
         }
 
         self.state = State::Connect;
@@ -111,10 +108,7 @@ impl<'a> Dns<'a> {
     /// Returns an error if `connect()` wasn't the last operation returned from `wants()`
     pub fn satisfy_connect(&mut self) -> Result<(), DnsError> {
         if self.state != State::Connect {
-            return Err(DnsError::InternalError(format!(
-                "malformed state, expected Connect, got {:?}",
-                self.state,
-            )));
+            return Err(DnsError::InternalError);
         }
 
         let mut buf = [0_u8; MAX_DNS_PACKET_LEN];
@@ -142,10 +136,7 @@ impl<'a> Dns<'a> {
     /// Returns an error if `write()` wasn't the last operation returned from `wants()`
     pub fn satisfy_write(&mut self, bytes_written: usize) -> Result<(), DnsError> {
         if self.state != State::Write {
-            return Err(DnsError::InternalError(format!(
-                "malformed state, expected Write, got {:?}",
-                self.state,
-            )));
+            return Err(DnsError::InternalError);
         }
 
         self.pos = self
@@ -155,10 +146,7 @@ impl<'a> Dns<'a> {
         self.increment_seq()?;
 
         if self.pos > self.len {
-            return Err(DnsError::InternalError(format!(
-                "malformed state, pos > len: {} > {}",
-                self.pos, self.len
-            )));
+            return Err(DnsError::InternalError);
         }
 
         if self.pos == self.len {
@@ -179,10 +167,7 @@ impl<'a> Dns<'a> {
     /// OR if too many bytes have been read from the net socket.
     pub fn satisfy_read(&mut self, bytes_read: usize) -> Result<(), DnsError> {
         if self.state != State::Read {
-            return Err(DnsError::InternalError(format!(
-                "malformed state, expected Read, got {:?}",
-                self.state,
-            )));
+            return Err(DnsError::InternalError);
         }
 
         self.len = self
@@ -192,10 +177,7 @@ impl<'a> Dns<'a> {
         self.increment_seq()?;
 
         if self.len > MAX_DNS_PACKET_LEN {
-            return Err(DnsError::InternalError(format!(
-                "malformed state, len > MAX_DNS_PACKET_LEN: {} > {MAX_DNS_PACKET_LEN}",
-                self.len
-            )));
+            return Err(DnsError::InternalError);
         }
 
         self.state = State::Close;
@@ -212,10 +194,7 @@ impl<'a> Dns<'a> {
     /// OR if bytes returned from the DNS server represent an invalid DNS packet.
     pub fn satisfy_close(&mut self) -> Result<(SocketAddr, u64), DnsError> {
         if self.state != State::Close {
-            return Err(DnsError::InternalError(format!(
-                "malformed state, expected Close, got {:?}",
-                self.state,
-            )));
+            return Err(DnsError::InternalError);
         }
 
         self.increment_seq()?;

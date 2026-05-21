@@ -1,6 +1,5 @@
-use std::str::FromStr;
-
 use anyhow::{Context, Result, bail};
+use core::str::FromStr;
 use mini_sansio_dns::{Dns, DnsRecordType, DnsWants};
 
 fn main() -> Result<()> {

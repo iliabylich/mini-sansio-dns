@@ -1,5 +1,5 @@
+use core::net::SocketAddr;
 use rustix::net::{AddressFamily, SocketType};
-use std::net::SocketAddr;
 
 /// Represents an operation that DNS connection wants YOU to perform.
 ///

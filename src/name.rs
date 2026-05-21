@@ -24,13 +24,13 @@ impl DnsName {
     }
 
     fn push_u8(&mut self, byte: u8) -> Result<(), DnsError> {
-        *self.buf.get_mut(self.len).ok_or_else(err)? = byte;
-        self.len = self.len.checked_add(1).ok_or_else(err)?;
+        *self.buf.get_mut(self.len).ok_or(DnsError::InternalError)? = byte;
+        self.len = self.len.checked_add(1).ok_or(DnsError::InternalError)?;
         Ok(())
     }
 
     pub(crate) fn as_bytes(&self) -> Result<&[u8], DnsError> {
-        self.buf.get(..self.len).ok_or_else(err)
+        self.buf.get(..self.len).ok_or(DnsError::InternalError)
     }
 }
 
@@ -42,8 +42,4 @@ impl core::fmt::Debug for DnsName {
             core::str::from_utf8(self.as_bytes().unwrap_or(b"<malformed>"))
         )
     }
-}
-
-fn err() -> DnsError {
-    DnsError::InternalError("malformed DnsName".to_string())
 }

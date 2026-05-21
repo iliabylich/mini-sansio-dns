@@ -1,5 +1,5 @@
 use crate::{DnsError, TYPE_A, TYPE_AAAA};
-use std::str::FromStr;
+use core::str::FromStr;
 
 /// DNS record type
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -26,7 +26,7 @@ impl FromStr for DnsRecordType {
         match s {
             "A" => Ok(Self::A),
             "AAAA" => Ok(Self::AAAA),
-            _ => Err(DnsError::UnknownDnsRecordType(s.to_string())),
+            _ => Err(DnsError::UnknownDnsRecordType),
         }
     }
 }
