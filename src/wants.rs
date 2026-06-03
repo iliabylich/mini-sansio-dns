@@ -1,6 +1,3 @@
-use core::net::SocketAddr;
-use rustix::net::{AddressFamily, SocketType};
-
 /// Represents an operation that DNS connection wants YOU to perform.
 ///
 /// Usually the flow should be:
@@ -14,22 +11,6 @@ use rustix::net::{AddressFamily, SocketType};
 /// ```
 #[derive(Debug)]
 pub enum DnsWants<'a> {
-    /// A `socket()` opertion
-    Socket {
-        /// `domain` argument of the `socket()` call
-        domain: AddressFamily,
-        /// `type` argument of the `socket()` call
-        r#type: SocketType,
-        /// sequence number of a request
-        seq: u64,
-    },
-    /// A `connect()` opertion
-    Connect {
-        /// `addr` argument of the `connect()` call
-        addr: SocketAddr,
-        /// sequence number of a request
-        seq: u64,
-    },
     /// A `read()` opertion
     Read {
         /// `buf` argument of the `read()` call
@@ -41,11 +22,6 @@ pub enum DnsWants<'a> {
     Write {
         /// `buf` argument of the `write()` call
         buf: &'a [u8],
-        /// sequence number of a request
-        seq: u64,
-    },
-    /// A `close()` operation
-    Close {
         /// sequence number of a request
         seq: u64,
     },
