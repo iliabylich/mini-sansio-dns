@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use core::str::FromStr;
-use mini_sansio_dns::{Dns, DnsRecordType, DnsWants};
+use mini_sansio_dns::{Dns, DnsRecordType, DnsWants, MAX_DNS_PACKET_LEN};
 use rustix::net::{AddressFamily, SocketType};
 use std::net::SocketAddr;
 
@@ -13,7 +13,8 @@ fn main() -> Result<()> {
     };
 
     let server_to_use: SocketAddr = "8.8.8.8:53".parse()?;
-    let mut dns = Dns::new("google.com", desired_record_type)?;
+    let mut dnsbuf = [0_u8; MAX_DNS_PACKET_LEN];
+    let mut dns = Dns::new("google.com", desired_record_type, &mut dnsbuf)?;
 
     // socket
     println!("socket() started");
@@ -26,21 +27,24 @@ fn main() -> Result<()> {
     println!("connect() finished");
 
     // write
-    let Some(DnsWants::Write { buf, seq: _seq }) = dns.wants()? else {
+    let Some(DnsWants::Write { buf, seq: _seq }) = dns.wants(&mut dnsbuf)? else {
         panic!("write() expected");
     };
     println!("write() started");
     let len = rustix::io::write(&fd, buf).context("write() failed")?;
-    dns.satisfy_write(len).context("satisfy_write() failed")?;
+    dns.satisfy_write(len, &mut dnsbuf)
+        .context("satisfy_write() failed")?;
     println!("write() finished");
 
     // read
-    let Some(DnsWants::Read { buf, seq: _seq }) = dns.wants()? else {
+    let Some(DnsWants::Read { buf, seq: _seq }) = dns.wants(&mut dnsbuf)? else {
         panic!("read() expected");
     };
     println!("read() started");
     let len = rustix::io::read(&fd, buf).context("read() failed")?;
-    let (resolved, _seq) = dns.satisfy_read(len).context("satisfy_read() failed")?;
+    let (resolved, _seq) = dns
+        .satisfy_read(len, &dnsbuf)
+        .context("satisfy_read() failed")?;
     println!("read() finished");
 
     println!("Resolved to {resolved:?}");

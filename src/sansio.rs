@@ -12,10 +12,10 @@ enum State {
 
 /// Sans-IO implementation of DNS
 #[must_use]
+#[derive(Debug, Clone, Copy)]
 pub struct Dns {
     state: State,
     seq: u64,
-    buf: [u8; MAX_DNS_PACKET_LEN],
     len: usize,
     pos: usize,
     desired_record_type: DnsRecordType,
@@ -27,14 +27,16 @@ impl Dns {
     /// # Errors
     ///
     /// Returns an error if given domain is too long
-    pub fn new(domain: &str, desired_record_type: DnsRecordType) -> Result<Self, DnsError> {
-        let mut buf = [0_u8; MAX_DNS_PACKET_LEN];
-        let len = Request::write(&mut buf, domain.as_bytes(), desired_record_type.into_raw())?;
+    pub fn new(
+        domain: &str,
+        desired_record_type: DnsRecordType,
+        buf: &mut [u8; MAX_DNS_PACKET_LEN],
+    ) -> Result<Self, DnsError> {
+        let len = Request::write(buf, domain.as_bytes(), desired_record_type.into_raw())?;
 
         Ok(Self {
             state: State::Write,
             seq: 0,
-            buf,
             len,
             pos: 0,
             desired_record_type,
@@ -49,21 +51,18 @@ impl Dns {
     /// # Errors
     ///
     /// Returns an error if there's an internal state error.
-    pub fn wants(&mut self) -> Result<Option<DnsWants<'_>>, DnsError> {
+    pub fn wants<'b>(
+        &mut self,
+        buf: &'b mut [u8; MAX_DNS_PACKET_LEN],
+    ) -> Result<Option<DnsWants<'b>>, DnsError> {
         match self.state {
             State::Write => {
-                let buf = self
-                    .buf
-                    .get(self.pos..self.len)
-                    .ok_or(DnsError::InternalError)?;
+                let buf = buf.get(self.pos..self.len).ok_or(DnsError::InternalError)?;
                 Ok(Some(DnsWants::Write { buf, seq: self.seq }))
             }
 
             State::Read => {
-                let buf = self
-                    .buf
-                    .get_mut(self.len..)
-                    .ok_or(DnsError::InternalError)?;
+                let buf = buf.get_mut(self.len..).ok_or(DnsError::InternalError)?;
                 Ok(Some(DnsWants::Read { buf, seq: self.seq }))
             }
 
@@ -78,7 +77,11 @@ impl Dns {
     /// # Errors
     ///
     /// Returns an error if `write()` wasn't the last operation returned from `wants()`
-    pub fn satisfy_write(&mut self, bytes_written: usize) -> Result<(), DnsError> {
+    pub fn satisfy_write(
+        &mut self,
+        bytes_written: usize,
+        buf: &mut [u8; MAX_DNS_PACKET_LEN],
+    ) -> Result<(), DnsError> {
         if self.state != State::Write {
             return Err(DnsError::InternalError);
         }
@@ -95,7 +98,7 @@ impl Dns {
 
         if self.pos == self.len {
             self.state = State::Read;
-            self.buf = [0; _];
+            buf.fill(0);
             self.len = 0;
         }
         Ok(())
@@ -109,7 +112,11 @@ impl Dns {
     ///
     /// Returns an error if `read()` wasn't the last operation returned from `wants()`
     /// OR if too many bytes have been read from the net socket.
-    pub fn satisfy_read(&mut self, bytes_read: usize) -> Result<(SocketAddr, u64), DnsError> {
+    pub fn satisfy_read(
+        &mut self,
+        bytes_read: usize,
+        buf: &[u8; MAX_DNS_PACKET_LEN],
+    ) -> Result<(SocketAddr, u64), DnsError> {
         if self.state != State::Read {
             return Err(DnsError::InternalError);
         }
@@ -126,10 +133,7 @@ impl Dns {
 
         self.state = State::Done;
 
-        let buf = self
-            .buf
-            .get(..self.len)
-            .ok_or(DnsError::InvalidDnsResponse)?;
+        let buf = buf.get(..self.len).ok_or(DnsError::InvalidDnsResponse)?;
         let addr = Response::read(buf, self.desired_record_type)?;
         Ok((addr, self.seq))
     }

@@ -1,5 +1,4 @@
-#![no_std]
-// #![forbid(unsafe_code)]
+#![forbid(unsafe_code)]
 #![warn(missing_docs)]
 #![allow(clippy::type_complexity)]
 #![warn(trivial_casts)]
@@ -17,7 +16,9 @@
 const TYPE_A: u16 = 1;
 const TYPE_AAAA: u16 = 28;
 const CLASS_IN: u16 = 1;
-const MAX_DNS_PACKET_LEN: usize = 512;
+
+/// Length of the buffer that is needed for the lib to operate.
+pub const MAX_DNS_PACKET_LEN: usize = 512;
 
 mod error;
 pub use error::DnsError;
